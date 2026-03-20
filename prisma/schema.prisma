@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+
+  classrooms       Classroom[]
+  classroomMembers ClassroomMember[]
+  testResults      TestResult[]
+  studentProgress  StudentProgress[]
+  riskFlags        StudentRiskFlag[]
+}
+
+model Classroom {
+  id          String   @id @default(uuid())
+  teacherId   String
+  name        String
+  classCode   String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  teacher   User               @relation(fields: [teacherId], references: [id])
+  members   ClassroomMember[]
+  materials LearningMaterial[]
+  riskFlags StudentRiskFlag[]
+}
+
+model ClassroomMember {
+  id          String   @id @default(uuid())
+  classroomId String
+  studentId   String
+  joinedAt    DateTime @default(now())
+  status      String   @default("active")
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+  student   User      @relation(fields: [studentId], references: [id])
+
+  @@unique([classroomId, studentId])
+}
+
+model LearningMaterial {
+  id            String   @id @default(uuid())
+  classroomId   String
+  title         String
+  topicCategory String
+  description   String?
+  videoUrl      String?
+  articleUrl    String?
+  orderIndex    Int      @default(0)
+  status        String   @default("draft")
+  createdAt     DateTime @default(now())
+
+  classroom       Classroom         @relation(fields: [classroomId], references: [id])
+  questions       Question[]
+  testResults     TestResult[]
+  studentProgress StudentProgress[]
+}
+
+model Question {
+  id            String @id @default(uuid())
+  materialId    String
+  questionText  String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer String
+  difficulty    String @default("sedang")
+  orderIndex    Int    @default(0)
+
+  material LearningMaterial @relation(fields: [materialId], references: [id])
+}
+
+model TestResult {
+  id           String   @id @default(uuid())
+  studentId    String
+  materialId   String
+  score        Float?
+  answersJson  Json?
+  aiFeedback   String?
+  timeSpentSec Int?
+  submittedAt  DateTime @default(now())
+
+  student  User             @relation(fields: [studentId], references: [id])
+  material LearningMaterial @relation(fields: [materialId], references: [id])
+}
+
+model StudentProgress {
+  id            String    @id @default(uuid())
+  studentId     String
+  materialId    String
+  status        String    @default("locked")
+  completionPct Float     @default(0)
+  lastAccessed  DateTime?
+
+  student  User             @relation(fields: [studentId], references: [id])
+  material LearningMaterial @relation(fields: [materialId], references: [id])
+
+  @@unique([studentId, materialId])
+}
+
+model StudentRiskFlag {
+  id          String    @id @default(uuid())
+  studentId   String
+  classroomId String
+  riskLevel   String
+  reason      String?
+  weakTopics  Json?
+  lastActive  DateTime?
+  isResolved  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  student   User      @relation(fields: [studentId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+}
