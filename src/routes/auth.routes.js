@@ -1,17 +1,12 @@
-import { Router } from 'express';
+import { Router } from 'express'
+import { register, login } from '../controllers/auth.controllers.js'
 
-const router = Router();
+const router = Router()
 
 // POST /api/auth/register
-router.post('/register', (req, res) => {
-  res.json({ message: 'Register endpoint — coming soon' });
-});
+router.post('/register', register)
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
-  res.json({ message: 'Login endpoint — coming soon' });
-});
+router.post('/login', login)
 
-//Belom ngurusin routes, fokus set up server dulu
-
-export default router;
+export default router

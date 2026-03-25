@@ -1,20 +1,23 @@
-import { Router } from 'express';
+import { Router } from 'express'
+import {
+  createMaterial,
+  getMaterialsByClassroom,
+  getQuestionsByMaterial
+} from '../controllers/material.controllers.js'
+import authenticate, { teacherOnly } from '../middleware/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-// GET /api/materials — ambil semua materi
-router.get('/', (req, res) => {
-  res.json({ message: 'List materi — coming soon' });
-});
+// Semua route butuh login
+router.use(authenticate)
 
-// POST /api/materials — guru tambah materi baru
-router.post('/', (req, res) => {
-  res.json({ message: 'Tambah materi — coming soon' });
-});
+// POST /api/materials — guru tambah materi + soal
+router.post('/', teacherOnly, createMaterial)
 
-// GET /api/materials/:id — detail 1 materi
-router.get('/:id', (req, res) => {
-  res.json({ message: `Detail materi ${req.params.id} — coming soon` });
-});
+// GET /api/materials/classroom/:classroomId — ambil semua materi di kelas
+router.get('/classroom/:classroomId', getMaterialsByClassroom)
 
-export default router;
+// GET /api/materials/:id/questions — ambil soal dari satu materi
+router.get('/:id/questions', getQuestionsByMaterial)
+
+export default router

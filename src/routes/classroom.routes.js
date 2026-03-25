@@ -1,20 +1,26 @@
-import { Router } from 'express';
+import { Router } from "express";
+import {
+  createClassroom,
+  joinClassroom,
+  getMyClassrooms,
+} from "../controllers/classroom.controllers.js";
+import authenticate, {
+  teacherOnly,
+  studentOnly,
+} from "../middleware/auth.middleware.js";
 
 const router = Router();
 
+// Semua route classroom butuh login
+router.use(authenticate);
+
+// GET /api/classrooms/my — lihat kelas saya (guru atau siswa)
+router.get("/my", getMyClassrooms);
+
 // POST /api/classrooms — guru buat kelas baru
-router.post('/', (req, res) => {
-  res.json({ message: 'Buat kelas — coming soon' });
-});
+router.post("/", teacherOnly, createClassroom);
 
-// POST /api/classrooms/join — siswa join pakai class_code
-router.post('/join', (req, res) => {
-  res.json({ message: 'Join kelas — coming soon' });
-});
-
-// GET /api/classrooms/:id — lihat detail kelas
-router.get('/:id', (req, res) => {
-  res.json({ message: `Detail kelas ${req.params.id} — coming soon` });
-});
+// POST /api/classrooms/join — siswa join pakai class code
+router.post("/join", studentOnly, joinClassroom);
 
 export default router;
