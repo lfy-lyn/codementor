@@ -1,6 +1,6 @@
 import prisma from '../database/prisma.js'
 
-// ── TAMBAH MATERI + SOAL (khusus guru - guru aja) ─────────────────
+// ── TAMBAH MATERI + SOAL (khusus guru) ─────────────────
 export const createMaterial = async (req, res) => {
   try {
     const {
@@ -11,10 +11,9 @@ export const createMaterial = async (req, res) => {
       videoUrl,
       articleUrl,
       orderIndex,
-      questions // array soal
+      questions
     } = req.body
 
-    // Validasi field wajib
     if (!classroomId || !title || !topicCategory) {
       return res.status(400).json({
         status : 'error',
@@ -22,7 +21,6 @@ export const createMaterial = async (req, res) => {
       })
     }
 
-    // Pastikan kelas milik guru yang login - login aja wleeee
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId }
     })
@@ -41,7 +39,6 @@ export const createMaterial = async (req, res) => {
       })
     }
 
-    // Buat materi sekaligus dengan soal-soalnya
     const material = await prisma.learningMaterial.create({
       data: {
         classroomId,
@@ -52,8 +49,7 @@ export const createMaterial = async (req, res) => {
         articleUrl,
         orderIndex: orderIndex || 0,
         status    : 'published',
-        // Kalau ada soal, langsung dibuat sekaligus
-        questions: questions?.length > 0 ? {
+        questions : questions?.length > 0 ? {
           create: questions.map((q, index) => ({
             questionText : q.questionText,
             optionA      : q.optionA,
@@ -66,7 +62,6 @@ export const createMaterial = async (req, res) => {
           }))
         } : undefined
       },
-      // Sertakan soal di response
       include: { questions: true }
     })
 
@@ -88,7 +83,6 @@ export const getMaterialsByClassroom = async (req, res) => {
   try {
     const { classroomId } = req.params
 
-    // Cek apakah user punya akses ke kelas ini
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId }
     })
@@ -102,10 +96,7 @@ export const getMaterialsByClassroom = async (req, res) => {
 
     const materials = await prisma.learningMaterial.findMany({
       where  : { classroomId, status: 'published' },
-      include: {
-        // Hitung jumlah soal per materi
-        _count: { select: { questions: true } }
-      },
+      include: { _count: { select: { questions: true } } },
       orderBy: { orderIndex: 'asc' }
     })
 
@@ -122,11 +113,10 @@ export const getMaterialsByClassroom = async (req, res) => {
   }
 }
 
-// ── AMBIL SOAL-SOAL DARI SATU MATERI ───────────────────
-// API pengambilan soal
+// ── AMBIL SOAL DARI SATU MATERI (untuk siswa, tanpa jawaban) ───────
 export const getQuestionsByMaterial = async (req, res) => {
   try {
-    const { id } = req.params // id materi
+    const { id } = req.params
 
     const material = await prisma.learningMaterial.findUnique({
       where: { id }
@@ -141,8 +131,7 @@ export const getQuestionsByMaterial = async (req, res) => {
 
     const questions = await prisma.question.findMany({
       where  : { materialId: id },
-      // Sembunyikan correctAnswer dari siswa!
-      // Jawaban benar hanya dikembalikan saat scoring
+      // correctAnswer sengaja tidak di-select — disembunyikan dari siswa
       select : {
         id          : true,
         questionText: true,
@@ -152,7 +141,6 @@ export const getQuestionsByMaterial = async (req, res) => {
         optionD     : true,
         difficulty  : true,
         orderIndex  : true
-        // correctAnswer sengAJa tidak di-select
       },
       orderBy: { orderIndex: 'asc' }
     })
@@ -177,5 +165,211 @@ export const getQuestionsByMaterial = async (req, res) => {
       status : 'error',
       message: error.message
     })
+  }
+}
+
+// ── DETAIL SATU MATERI LENGKAP (untuk guru, dengan jawaban) ────────
+export const getMaterialDetail = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const material = await prisma.learningMaterial.findUnique({
+      where  : { id },
+      include: { questions: { orderBy: { orderIndex: 'asc' } } }
+    })
+
+    if (!material) {
+      return res.status(404).json({
+        status : 'error',
+        message: 'Materi tidak ditemukan'
+      })
+    }
+
+    res.json({
+      status: 'success',
+      data  : material
+    })
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
+}
+
+// ── EDIT MATERI ─────────────────────────────────────────
+export const updateMaterial = async (req, res) => {
+  try {
+    const { id } = req.params
+    const {
+      title,
+      topicCategory,
+      description,
+      videoUrl,
+      articleUrl,
+      orderIndex,
+      questions
+    } = req.body
+
+    const material = await prisma.learningMaterial.findUnique({
+      where: { id }
+    })
+
+    if (!material) {
+      return res.status(404).json({
+        status : 'error',
+        message: 'Materi tidak ditemukan'
+      })
+    }
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: material.classroomId }
+    })
+
+    if (classroom.teacherId !== req.user.id) {
+      return res.status(403).json({
+        status : 'error',
+        message: 'Kamu tidak punya akses untuk edit materi ini'
+      })
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (questions && questions.length > 0) {
+        await tx.question.deleteMany({
+          where: { materialId: id }
+        })
+      }
+
+      return tx.learningMaterial.update({
+        where: { id },
+        data : {
+          title        : title         ?? material.title,
+          topicCategory: topicCategory ?? material.topicCategory,
+          description  : description   ?? material.description,
+          videoUrl     : videoUrl      ?? material.videoUrl,
+          articleUrl   : articleUrl    ?? material.articleUrl,
+          orderIndex   : orderIndex    ?? material.orderIndex,
+          questions    : questions?.length > 0 ? {
+            create: questions.map((q, index) => ({
+              questionText : q.questionText,
+              optionA      : q.optionA,
+              optionB      : q.optionB,
+              optionC      : q.optionC,
+              optionD      : q.optionD,
+              correctAnswer: q.correctAnswer,
+              difficulty   : q.difficulty || 'sedang',
+              orderIndex   : index
+            }))
+          } : undefined
+        },
+        include: { questions: true }
+      })
+    })
+
+    res.json({
+      status : 'success',
+      message: 'Materi berhasil diupdate',
+      data   : updated
+    })
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
+}
+
+// ── UBAH STATUS DRAFT / PUBLISH ─────────────────────────
+export const updateMaterialStatus = async (req, res) => {
+  try {
+    const { id }     = req.params
+    const { status } = req.body
+
+    if (!['draft', 'published'].includes(status)) {
+      return res.status(400).json({
+        status : 'error',
+        message: 'Status harus draft atau published'
+      })
+    }
+
+    const material = await prisma.learningMaterial.findUnique({
+      where: { id }
+    })
+
+    if (!material) {
+      return res.status(404).json({
+        status : 'error',
+        message: 'Materi tidak ditemukan'
+      })
+    }
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: material.classroomId }
+    })
+
+    if (classroom.teacherId !== req.user.id) {
+      return res.status(403).json({
+        status : 'error',
+        message: 'Kamu tidak punya akses untuk mengubah status materi ini'
+      })
+    }
+
+    const updated = await prisma.learningMaterial.update({
+      where: { id },
+      data : { status }
+    })
+
+    res.json({
+      status : 'success',
+      message: `Materi berhasil diubah menjadi ${status}`,
+      data   : updated
+    })
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
+}
+
+// ── HAPUS MATERI ────────────────────────────────────────
+export const deleteMaterial = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const material = await prisma.learningMaterial.findUnique({
+      where  : { id },
+      include: { _count: { select: { questions: true } } }
+    })
+
+    if (!material) {
+      return res.status(404).json({
+        status : 'error',
+        message: 'Materi tidak ditemukan'
+      })
+    }
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: material.classroomId }
+    })
+
+    if (classroom.teacherId !== req.user.id) {
+      return res.status(403).json({
+        status : 'error',
+        message: 'Kamu tidak punya akses untuk menghapus materi ini'
+      })
+    }
+
+    // Hapus soal dulu, baru hapus materinya
+    await prisma.$transaction(async (tx) => {
+      await tx.question.deleteMany({
+        where: { materialId: id }
+      })
+      await tx.learningMaterial.delete({
+        where: { id }
+      })
+    })
+
+    res.json({
+      status : 'success',
+      message: `Materi "${material.title}" berhasil dihapus beserta ${material._count.questions} soal`
+    })
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
   }
 }
