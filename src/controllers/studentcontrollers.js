@@ -1,54 +1,45 @@
-const { evaluateCode } = require('../services/scoringservice'); // Import engine
-const prisma = require('../prisma'); // Prisma client
+import { evaluateCode } from '../services/scoringservice.js';  // + .js
+import prisma from '../database/prisma.js';  // + .js (atau sesuaikan path)
 
-// ENDPOINT: POST /students/score
-exports.scoreSubmission = async (req, res) => {
+
+// ENDPOINT: POST /api/students/score - AUTOMATED SCORING
+// Frontend kirim kode → backend test otomatis → simpan DB → return score
+// —————————————————————————————————————————————————————————————————
+const scoreSubmission = async (req, res) => {
   try {
-    console.log('📥 Menerima submission dari:', req.user?.email);
+    console.log('Menerima submission dari:', req.user?.email);
     
-    // Ambil data dari frontend
-    const { 
-      userCode,           // Kode yang dikirim user
-      testCases,         // Array test cases tersembunyi (server-side only)
-      exerciseId         // ID soal
-    } = req.body;
+    const { userCode, testCases, exerciseId } = req.body;
     
-    // VALIDASI input
-    if (!userCode || !testCases || testCases.length === 0) {
+    if (!userCode || !testCases?.length) {
       return res.status(400).json({ 
-        error: 'Kode dan test cases wajib ada!' 
+        error: 'userCode dan testCases wajib ada!' 
       });
     }
     
-    // 🚀 JALANKAN PENILAIAN OTOMATIS
-    const score = evaluateCode(userCode, testCases);
+    // JALANKAN SCORING (udah berhasil!)
+    const score = await evaluateCode(userCode, testCases);
     
-    // 💾 SIMPAN KE DATABASE (Prisma)
-    const submission = await prisma.submission.create({
-      data: {
-        userCode,
-        score,
-        exerciseId,
-        studentId: req.user.id, // Dari middleware auth
-        submittedAt: new Date()
-      }
-    });
+    // TEMPORARY: Skip database
+    console.log('Submission berhasil, skip DB');
     
-    // 📤 KIRIM HASIL KE FRONTEND
     res.status(200).json({
       success: true,
-      score: score,
-      passed: score >= 80,  // Threshold lulus
+      score,
+      passed: score >= 70,
       totalTests: testCases.length,
-      submissionId: submission.id,
-      message: score >= 80 ? '🎉 Lulus!' : 'Coba lagi ya!'
+      message: score >= 70 ? 'Lulus!' : 'Coba lagi ya!'
     });
     
   } catch (error) {
-    console.error('❌ Error scoring:', error);
+    console.error('Error scoring:', error);
     res.status(500).json({ 
       error: 'Server error saat penilaian',
       details: error.message 
     });
   }
 };
+
+
+export { scoreSubmission };
+export default { scoreSubmission };
