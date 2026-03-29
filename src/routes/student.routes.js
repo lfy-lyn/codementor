@@ -12,4 +12,13 @@ router.get('/progress', (req, res) => {
   res.json({ message: 'Progress siswa — coming soon' });
 });
 
+// ——— AUTOMATED SCORING - PENILAIAN OTOMATIS ───────────────────────────
+
+// Import controller untuk penilaian
+import studentControllers from '../controllers/studentcontrollers.js';
+
+// OST /api/students/score — endpoint utama automated scoring
+// Frontend kirim kode user → backend nilai otomatis → return score
+router.post('/score', studentControllers.scoreSubmission);
+
 export default router;
