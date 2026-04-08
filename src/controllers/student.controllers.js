@@ -1,4 +1,5 @@
 import prisma from '../database/prisma.js'
+import { generateAiSummary } from '../services/ai.service.js'
 import { evaluateCode } from '../services/scoringservice.js'
 
 // ── DASHBOARD SISWA ─────────────────────────────────────
@@ -151,9 +152,29 @@ export const submitJawabanPilihanGanda = async (req, res) => {
     })
 
     const score = Math.round((benar / questions.length) * 100)
-    const lulus = score > 65
+    const lulus = score >= 70 // Sesuai permintaanmu, standar jadi 70
+
+    // --- MULAI KODE TAMBAHAN AI ---
+    let feedbackText = ""
+    if (lulus) {
+      feedbackText = `Bagus! Kamu lulus dengan skor ${score}. Lanjutkan ke materi berikutnya.`
+    } else {
+      // 1. Coba panggil AI
+      const aiSummary = await generateAiSummary(material.title, material.description)
+      
+      // 2. Cek apakah AI beneran kasih jawaban
+      if (aiSummary && aiSummary.trim() !== "") {
+        feedbackText = aiSummary
+      } else {
+        // 3. Kalau AI gagal, kasih pesan pemberitahuan biar kamu tahu AI-nya error
+        feedbackText = "AI sedang sibuk, tapi jangan menyerah! Skor kamu " + score + ". Pelajari lagi ya."
+        console.log("Wah, Gemini gagal kasih rangkuman nih.");
+      }
+    }
+    // --- SELESAI KODE TAMBAHAN AI ---
 
     // Simpan hasil ke database
+    console.log("Hasil dari Gemini:", feedbackText)
     const testResult = await prisma.testResult.create({
       data: {
         studentId,
@@ -161,9 +182,7 @@ export const submitJawabanPilihanGanda = async (req, res) => {
         score,
         answersJson : answers,
         timeSpentSec: null,
-        aiFeedback  : lulus
-          ? `Bagus! Kamu lulus dengan skor ${score}. Lanjutkan ke materi berikutnya.`
-          : `Kamu mendapat skor ${score}. Pelajari kembali materi ini sebelum melanjutkan.`
+        aiFeedback  : feedbackText // <-- Gunakan variabel feedbackText yang baru
       }
     })
 
@@ -191,11 +210,11 @@ export const submitJawabanPilihanGanda = async (req, res) => {
       data  : {
         score,
         benar,
-        totalSoal        : questions.length,
+        totalSoal : questions.length,
         lulus,
         hasilPerSoal,
         rekomendasiMateri,
-        feedback         : testResult.aiFeedback
+        feedback : testResult.aiFeedback // Pastikan ini mengambil dari DB yang baru dibuat
       }
     })
 
