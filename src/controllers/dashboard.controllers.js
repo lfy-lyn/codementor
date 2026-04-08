@@ -11,7 +11,7 @@ export const getTeacherDashboard = async (req, res) => {
 
     if (!classroom) {
       return res.status(404).json({
-        status : 'error',
+        status: 'error',
         message: 'Kamu belum punya kelas'
       })
     }
@@ -26,14 +26,14 @@ export const getTeacherDashboard = async (req, res) => {
     // ── 2. JUMLAH SISWA CRITICAL & WARNING ───────────────
     // Ambil risk flags yang belum resolved
     const riskFlags = await prisma.studentRiskFlag.findMany({
-      where    : { classroomId, isResolved: false },
-      include  : {
-        student: { select: { id: true, name: true } }
+      where: { classroomId, isResolved: false },
+      include: {
+        student: { select: { id: true, username: true } }
       }
     })
 
     const siswaCritical = riskFlags.filter(r => r.riskLevel === 'critical').length
-    const siswaWarning  = riskFlags.filter(r => r.riskLevel === 'warning').length
+    const siswaWarning = riskFlags.filter(r => r.riskLevel === 'warning').length
 
     // ── 3. TINGKAT KEGAGALAN PER TOPIK ───────────────────
     // Gagal = skor di bawah 65
@@ -54,7 +54,7 @@ export const getTeacherDashboard = async (req, res) => {
       const jumlahGagal = await prisma.testResult.count({
         where: {
           materialId: materi.id,
-          score     : { lte: THRESHOLD } // lte = less than or equal
+          score: { lte: THRESHOLD } // lte = less than or equal
         }
       })
 
@@ -63,9 +63,9 @@ export const getTeacherDashboard = async (req, res) => {
         : 0
 
       kegagalanPerTopik.push({
-        topik           : materi.topicCategory,
-        judul           : materi.title,
-        totalSiswa      : totalHasilTes,
+        topik: materi.topicCategory,
+        judul: materi.title,
+        totalSiswa: totalHasilTes,
         jumlahGagal,
         persentaseGagal
       })
@@ -86,22 +86,22 @@ export const getTeacherDashboard = async (req, res) => {
     const sebaranNilai = { A: 0, B: 0, C: 0, D: 0 }
     for (const hasil of semuaHasilTes) {
       const skor = hasil.score ?? 0
-      if (skor >= 80)      sebaranNilai.A++
+      if (skor >= 80) sebaranNilai.A++
       else if (skor >= 60) sebaranNilai.B++
       else if (skor >= 40) sebaranNilai.C++
-      else                 sebaranNilai.D++
+      else sebaranNilai.D++
     }
 
     // ── 5. KEAKTIFAN KELAS HARIAN ─────────────────────────
     // Hitung berapa siswa yang submit tes per hari dalam 7 hari terakhir
-    const today     = new Date()
+    const today = new Date()
     const sevenDays = new Date(today)
     sevenDays.setDate(today.getDate() - 6) // 7 hari termasuk hari ini
 
     const hasilTes7Hari = await prisma.testResult.findMany({
       where: {
-        material     : { classroomId },
-        submittedAt  : { gte: sevenDays }
+        material: { classroomId },
+        submittedAt: { gte: sevenDays }
       },
       select: { submittedAt: true, studentId: true }
     })
@@ -123,33 +123,33 @@ export const getTeacherDashboard = async (req, res) => {
       ).size
 
       keaktifanHarian.push({
-        hari      : hariLabels[tanggal.getDay()],
-        tanggal   : tanggal.toLocaleDateString('id-ID'),
+        hari: hariLabels[tanggal.getDay()],
+        tanggal: tanggal.toLocaleDateString('id-ID'),
         siswaAktif
       })
     }
 
     // ── 6. LIST SISWA DENGAN STATUS ───────────────────────
     const members = await prisma.classroomMember.findMany({
-      where  : { classroomId, status: 'active' },
+      where: { classroomId, status: 'active' },
       include: {
         student: {
           select: {
-            id         : true,
-            name       : true,
+            id: true,
+            username: true,
             // Ambil hasil tes terakhir untuk tau kapan terakhir aktif
             testResults: {
-              where  : { material: { classroomId } },
+              where: { material: { classroomId } },
               orderBy: { submittedAt: 'desc' },
-              take   : 1,
-              select : { submittedAt: true, score: true }
+              take: 1,
+              select: { submittedAt: true, score: true }
             },
             // Ambil risk flag yang aktif
             riskFlags: {
-              where  : { classroomId, isResolved: false },
+              where: { classroomId, isResolved: false },
               orderBy: { createdAt: 'desc' },
-              take   : 1,
-              select : { riskLevel: true, reason: true, weakTopics: true }
+              take: 1,
+              select: { riskLevel: true, reason: true, weakTopics: true }
             }
           }
         }
@@ -157,16 +157,16 @@ export const getTeacherDashboard = async (req, res) => {
     })
 
     const listSiswa = members.map(m => {
-      const siswa       = m.student
-      const riskFlag    = siswa.riskFlags[0]
-      const lastTest    = siswa.testResults[0]
+      const siswa = m.student
+      const riskFlag = siswa.riskFlags[0]
+      const lastTest = siswa.testResults[0]
 
       return {
-        id          : siswa.id,
-        nama        : siswa.name,
-        status      : riskFlag ? riskFlag.riskLevel : 'safe',
-        alasan      : riskFlag ? riskFlag.reason    : null,
-        topikLemah  : riskFlag ? riskFlag.weakTopics : [],
+        id: siswa.id,
+        nama: siswa.username,
+        status: riskFlag ? riskFlag.riskLevel : 'safe',
+        alasan: riskFlag ? riskFlag.reason : null,
+        topikLemah: riskFlag ? riskFlag.weakTopics : [],
         terakhirAktif: lastTest ? lastTest.submittedAt : null,
       }
     })
@@ -178,10 +178,10 @@ export const getTeacherDashboard = async (req, res) => {
     // ── RESPONSE ──────────────────────────────────────────
     res.json({
       status: 'success',
-      data  : {
+      data: {
         kelas: {
-          id       : classroom.id,
-          nama     : classroom.name,
+          id: classroom.id,
+          nama: classroom.name,
           classCode: classroom.classCode
         },
         ringkasan: {

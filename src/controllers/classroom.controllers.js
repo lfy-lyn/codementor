@@ -13,11 +13,11 @@ const generateClassCode = () => {
 // ── BUAT KELAS BARU (khusus guru) ───────────────────────
 export const createClassroom = async (req, res) => {
   try {
-    const { name, description } = req.body
+    const { username, description } = req.body
     // req.user diisi oleh middleware authenticate
     const teacherId = req.user.id
 
-    if (!name) {
+    if (!username) {
       return res.status(400).json({
         status : 'error',
         message: 'Nama kelas harus diisi'
@@ -119,10 +119,10 @@ export const joinClassroom = async (req, res) => {
     res.json({
       status: 'success',
       data  : {
-        message  : `Berhasil bergabung ke kelas ${classroom.name}`,
+        message  : `Berhasil bergabung ke kelas ${classroom.username}`,
         classroom: {
           id       : classroom.id,
-          name     : classroom.name,
+          username     : classroom.username,
           classCode: classroom.classCode
         }
       }
@@ -162,7 +162,7 @@ export const getMyClassrooms = async (req, res) => {
           classroom: {
             include: {
               _count : { select: { members: true } },
-              teacher: { select: { name: true } }
+              teacher: { select: { username: true } }
             }
           }
         }

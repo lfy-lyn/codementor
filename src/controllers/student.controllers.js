@@ -20,7 +20,7 @@ export const getStudentDashboard = async (req, res) => {
 
     const student = await prisma.user.findUnique({
       where : { id: studentId },
-      select: { id: true, name: true, email: true }
+      select: { id: true, username: true, email: true }
     })
 
     const classroomIds = memberships.map(m => m.classroomId)
@@ -79,10 +79,10 @@ export const getStudentDashboard = async (req, res) => {
     res.json({
       status: 'success',
       data  : {
-        student: { id: student.id, name: student.name, email: student.email },
+        student: { id: student.id, username: student.username, email: student.email },
         kelas  : memberships.map(m => ({
           id       : m.classroom.id,
-          nama     : m.classroom.name,
+          nama     : m.classroom.username,
           classCode: m.classroom.classCode
         })),
         statistik: { progressPct, modulSelesai, totalModul, rataSkor, totalWaktuMenit },
