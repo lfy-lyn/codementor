@@ -6,10 +6,10 @@ import prisma from '../database/prisma.js'
 export const register = async (req, res) => {
   try {
     // Ambil data yang dikirim dari frontend
-    const { name, email, password, role } = req.body
+    const { username, email, password, role } = req.body
 
     // Validasi — pastikan semua field terisi
-    if (!name || !email || !password || !role) {
+    if (!username || !email || !password || !role) {
       return res.status(400).json({
         status : 'error',
         message: 'Semua field harus diisi'
@@ -41,7 +41,7 @@ export const register = async (req, res) => {
 
     // Simpan user baru ke database
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, role }
+      data: { username, email, passwordHash, role }
     })
 
     // Buat token JWT
@@ -59,10 +59,10 @@ export const register = async (req, res) => {
       data  : {
         token,
         user: {
-          id   : user.id,
-          name : user.name,
-          email: user.email,
-          role : user.role
+          id       : user.id,
+          username : user.username,
+          email    : user.email,
+          role     : user.role
         }
       }
     })
@@ -124,10 +124,10 @@ export const login = async (req, res) => {
       data  : {
         token,
         user: {
-          id   : user.id,
-          name : user.name,
-          email: user.email,
-          role : user.role
+          id       : user.id,
+          username : user.username,
+          email    : user.email,
+          role     : user.role
         }
       }
     })

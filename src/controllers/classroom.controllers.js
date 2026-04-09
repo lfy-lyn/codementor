@@ -162,7 +162,7 @@ export const getMyClassrooms = async (req, res) => {
           classroom: {
             include: {
               _count : { select: { members: true } },
-              teacher: { select: { name: true } }
+              teacher: { select: { username: true } }
             }
           }
         }

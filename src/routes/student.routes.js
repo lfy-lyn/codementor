@@ -1,24 +1,22 @@
-import { Router } from 'express';
+import { Router } from 'express'
+import {
+  getStudentDashboard,
+  submitJawabanPilihanGanda,
+  scoreSubmission
+} from '../controllers/student.controllers.js'
+import authenticate, { studentOnly } from '../middleware/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-// GET /api/students/dashboard — data dashboard siswa
-router.get('/dashboard', (req, res) => {
-  res.json({ message: 'Dashboard siswa — coming soon' });
-});
+router.use(authenticate)
 
-// GET /api/students/progress — progress modul siswa
-router.get('/progress', (req, res) => {
-  res.json({ message: 'Progress siswa — coming soon' });
-});
+// GET /api/students/dashboard — dashboard siswa
+router.get('/dashboard', studentOnly, getStudentDashboard)
 
-// ——— AUTOMATED SCORING - PENILAIAN OTOMATIS ───────────────────────────
+// POST /api/students/submit — submit jawaban pilihan ganda
+router.post('/submit', studentOnly, submitJawabanPilihanGanda)
 
-// Import controller untuk penilaian
-import studentControllers from '../controllers/studentcontrollers.js';
+// POST /api/students/score — automated scoring kode programming
+router.post('/score', scoreSubmission)
 
-// OST /api/students/score — endpoint utama automated scoring
-// Frontend kirim kode user → backend nilai otomatis → return score
-router.post('/score', studentControllers.scoreSubmission);
-
-export default router;
+export default router
