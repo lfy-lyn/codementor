@@ -13,11 +13,11 @@ const generateClassCode = () => {
 // ── BUAT KELAS BARU (khusus guru) ───────────────────────
 export const createClassroom = async (req, res) => {
   try {
-    const { username, description } = req.body
+    const { name, description } = req.body
     // req.user diisi oleh middleware authenticate
     const teacherId = req.user.id
 
-    if (!username) {
+    if (!name) {
       return res.status(400).json({
         status : 'error',
         message: 'Nama kelas harus diisi'
