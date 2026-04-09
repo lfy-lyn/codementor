@@ -119,10 +119,10 @@ export const joinClassroom = async (req, res) => {
     res.json({
       status: 'success',
       data  : {
-        message  : `Berhasil bergabung ke kelas ${classroom.username}`,
+        message  : `Berhasil bergabung ke kelas ${classroom.name}`,
         classroom: {
           id       : classroom.id,
-          username     : classroom.username,
+          name     : classroom.name,
           classCode: classroom.classCode
         }
       }

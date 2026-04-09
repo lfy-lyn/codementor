@@ -83,7 +83,7 @@ export const getStudentDashboard = async (req, res) => {
         student: { id: student.id, username: student.username, email: student.email },
         kelas  : memberships.map(m => ({
           id       : m.classroom.id,
-          nama     : m.classroom.username,
+          nama     : m.classroom.name,
           classCode: m.classroom.classCode
         })),
         statistik: { progressPct, modulSelesai, totalModul, rataSkor, totalWaktuMenit },
