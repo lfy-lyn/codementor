@@ -2,14 +2,15 @@ import express from 'express';
 import cors    from 'cors';
 import helmet  from 'helmet';
 import morgan  from 'morgan';
-import prisma from './database/prisma.js';
+import prisma  from './database/prisma.js';
 
 // Import semua routes
 import authRoutes      from './routes/auth.routes.js';
 import classroomRoutes from './routes/classroom.routes.js';
 import materialRoutes  from './routes/material.routes.js';
 import studentRoutes   from './routes/student.routes.js';
-import dashboardRoutes from './routes/dashboard.routes.js'
+import dashboardRoutes from './routes/dashboard.routes.js';
+import quizRoutes      from './routes/quiz.routes.js';
 
 const app = express();
 
@@ -49,7 +50,8 @@ app.use('/api/auth',       authRoutes);
 app.use('/api/classrooms', classroomRoutes);
 app.use('/api/materials',  materialRoutes);
 app.use('/api/students',   studentRoutes);
-app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/quiz', quizRoutes);
 
 // ── ERROR HANDLER ───────────────────────────────────────
 app.use((err, req, res, next) => {
