@@ -30,10 +30,10 @@ export const submitQuiz = async (req, res) => {
         where: { id: materialId }
       });
 
-  console.log("===== MATERI KE AI =====");
-  console.log("TITLE:", material?.title);
-  console.log("DESCRIPTION:", material?.description);
-  console.log("========================");
+      console.log("===== MATERI KE AI =====");
+      console.log("TITLE:", material?.title);
+      console.log("DESCRIPTION:", material?.description);
+      console.log("========================");
 
       const materialText = `
 Judul: ${material.title}
@@ -41,15 +41,15 @@ Judul: ${material.title}
 Materi:
 ${material.description}
 `;
-try{
-aiFeedback = await generateLearningFeedback(materialText);
-}catch(err) {
+      try {
+        aiFeedback = await generateLearningFeedback(materialText);
+      } catch (err) {
 
-  console.log("AI ERROR:", err.message);
+        console.log("AI ERROR:", err.message);
 
-  aiFeedback = "AI sedang sibuk. Silakan pelajari kembali materi.";
+        aiFeedback = "AI sedang sibuk. Silakan pelajari kembali materi.";
 
-}
+      }
     }
 
     res.json({
