@@ -39,7 +39,7 @@ export const submitQuiz = async (req, res) => {
 
     let aiFeedback = null;
 
-    if (score < 70) {
+    if (score < 50) {
 
       const material = await prisma.learningMaterial.findUnique({
         where: { id: materialId }
@@ -50,57 +50,49 @@ export const submitQuiz = async (req, res) => {
       console.log("DESCRIPTION:", material?.description);
       console.log("========================");
 
-      const wrongText = wrongQuestions.map(q => `
-Pertanyaan: ${q.questionText}
-
-Pilihan jawaban:
-A. ${q.optionA}
-B. ${q.optionB}
-C. ${q.optionC}
-D. ${q.optionD}
-
-Jawaban siswa: ${q.studentAnswer}
-Jawaban benar: ${q.correctAnswer}
-`).join("\n")
-
       const materialText = `
-Judul materi:
-${material.title}
+Judul: ${material.title}
 
 Materi:
 ${material.description}
+`;
 
-Soal yang salah dijawab siswa:
-${wrongText}
-`
-      try {
-        aiFeedback = await generateLearningFeedback(materialText);
-      } catch (err) {
+      const wrongText = JSON.stringify(wrongQuestions, null, 2)
 
-        console.log("AI ERROR:", err.message);
+      aiFeedback = await generateLearningFeedback(
+        materialText,
+        wrongText
+      )
 
-        aiFeedback = "AI sedang sibuk. Silakan pelajari kembali materi.";
+    
+    try {
+      aiFeedback = await generateLearningFeedback(materialText);
+    } catch (err) {
 
-      }
+      console.log("AI ERROR:", err.message);
+
+      aiFeedback = "AI sedang sibuk. Silakan pelajari kembali materi.";
+
     }
+  }
 
     res.json({
-      status: "success",
-      data: {
-        score,
-        correct,
-        total: answers.length,
-        passed: score >= 70,
-        aiFeedback
-      }
-    });
+    status: "success",
+    data: {
+      score,
+      correct,
+      total: answers.length,
+      passed: score >= 70,
+      aiFeedback
+    }
+  });
 
-  } catch (error) {
+} catch (error) {
 
-    res.status(500).json({
-      status: "error",
-      message: error.message
-    });
+  res.status(500).json({
+    status: "error",
+    message: error.message
+  });
 
-  }
+}
 };

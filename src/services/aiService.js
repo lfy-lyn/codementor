@@ -9,31 +9,33 @@ const groq = new Groq({
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-export const generateLearningFeedback = async (materialText) => {
+export const generateLearningFeedback = async (materialText, wrongQuestions) => {
+  console.log("MATERI:", materialText)
+  console.log("SOAL SALAH:", wrongQuestions)
 
   const prompt = `
-Kamu adalah AI tutor yang membantu siswa SMK memahami konsep programming.
+Kamu adalah AI tutor untuk siswa/mahasiswa/orang yang sedang belajar programming.
 
-Siswa baru saja menjawab beberapa soal quiz dengan salah.
+Tugasmu membantu siswa/mahasiswa/orang memahami konsep yang mereka salah pahami.
 
-Aturan penting:
-- JANGAN menyebut huruf jawaban yang benar
-- JANGAN menyebutkan teks jawaban yang benar
-- JANGAN memberi jawaban langsung
-
-Tugasmu:
-- Berikan petunjuk (hint) agar siswa bisa menemukan jawabannya sendiri
-- Jelaskan konsep yang diuji oleh soal
+ATURAN:
+- Jangan memberitahu jawaban yang benar
+- Jangan menyebut pilihan A/B/C/D sebagai jawaban benar
+- Berikan hanya HINT dan penjelasan konsep
 - Gunakan bahasa sangat sederhana
-- Maksimal 120 kata
+- Maksimal 150 kata
 - Boleh menggunakan bullet point
 
-Gunakan informasi dari soal untuk memahami konsep yang diuji.
-
-Data soal:
+Materi yang sedang dipelajari:
 ${materialText}
 
-Jika memungkinkan, gunakan analogi dunia nyata agar siswa lebih mudah memahami konsep.
+Soal yang dijawab salah oleh siswa:
+${wrongQuestions}
+
+Tugasmu:
+1. Jelaskan konsep yang kemungkinan belum dipahami siswa/mahasiswa/orang (intinya general)
+2. Berikan hint agar siswa bisa berpikir ulang
+3. Dorong siswa untuk membaca kembali materi
 `
 
   const geminiModels = [
