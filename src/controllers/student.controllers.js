@@ -1,5 +1,5 @@
 import prisma from '../database/prisma.js'
-import { generateAiSummary } from '../services/ai.service.js'
+import { generateLearningFeedback } from '../services/aiService.js'
 import { evaluateCode } from '../services/scoringservice.js'
 
 // ── DASHBOARD SISWA ─────────────────────────────────────
