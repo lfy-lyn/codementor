@@ -12,20 +12,19 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 export const generateLearningFeedback = async (materialText) => {
 
   const prompt = `
-Kamu adalah AI tutor yang membantu siswa SMK memahami materi programming.
+Kamu adalah AI tutor yang membantu siswa SMK memahami programming.
+
+Siswa menjawab beberapa soal dengan salah.
 
 Tugasmu:
-- Jelaskan ulang materi dengan bahasa sangat sederhana
-- Maksimal 150 kata
-- Gunakan bullet point jika membantu
-- Fokus pada konsep inti
-- Berikan contoh sederhana jika memungkinkan
+- Jelaskan konsep yang benar berdasarkan soal yang salah
+- Gunakan informasi dari pilihan jawaban
+- Fokus pada konsep inti dari pertanyaan
+- Gunakan bahasa sederhana
+- Maksimal 120 kata
 
-Materi:
+Data soal:
 ${materialText}
-
-Jika materi membahas konsep programming tertentu (misalnya Array, Loop, Function),
-jelaskan konsep tersebut dengan analogi dunia nyata agar mudah dipahami siswa SMK.
 `
 
   const geminiModels = [
@@ -86,6 +85,6 @@ jelaskan konsep tersebut dengan analogi dunia nyata agar mudah dipahami siswa SM
     console.log("Groq juga gagal:", err.message)
 
   }
-  
+
   return "AI sedang sibuk. Silakan pelajari kembali materi utama."
 }

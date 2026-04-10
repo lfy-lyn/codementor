@@ -7,6 +7,7 @@ export const submitQuiz = async (req, res) => {
     const { materialId, answers } = req.body;
 
     let correct = 0;
+    let wrongQuestions = [];
 
     for (const a of answers) {
 
@@ -16,9 +17,23 @@ export const submitQuiz = async (req, res) => {
 
       if (question.correctAnswer === a.answer) {
         correct++;
+      } else {
+
+        wrongQuestions.push({
+          questionText: question.questionText,
+          optionA: question.optionA,
+          optionB: question.optionB,
+          optionC: question.optionC,
+          optionD: question.optionD,
+          studentAnswer: a.answer,
+          correctAnswer: question.correctAnswer
+        });
+
       }
 
     }
+
+
 
     const score = Math.round((correct / answers.length) * 100);
 
@@ -35,12 +50,29 @@ export const submitQuiz = async (req, res) => {
       console.log("DESCRIPTION:", material?.description);
       console.log("========================");
 
+      const wrongText = wrongQuestions.map(q => `
+Pertanyaan: ${q.questionText}
+
+Pilihan jawaban:
+A. ${q.optionA}
+B. ${q.optionB}
+C. ${q.optionC}
+D. ${q.optionD}
+
+Jawaban siswa: ${q.studentAnswer}
+Jawaban benar: ${q.correctAnswer}
+`).join("\n")
+
       const materialText = `
-Judul: ${material.title}
+Judul materi:
+${material.title}
 
 Materi:
 ${material.description}
-`;
+
+Soal yang salah dijawab siswa:
+${wrongText}
+`
       try {
         aiFeedback = await generateLearningFeedback(materialText);
       } catch (err) {
