@@ -12,19 +12,28 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 export const generateLearningFeedback = async (materialText) => {
 
   const prompt = `
-Kamu adalah AI tutor yang membantu siswa SMK memahami programming.
+Kamu adalah AI tutor yang membantu siswa SMK memahami konsep programming.
 
-Siswa menjawab beberapa soal dengan salah.
+Siswa baru saja menjawab beberapa soal quiz dengan salah.
+
+Aturan penting:
+- JANGAN menyebut huruf jawaban yang benar
+- JANGAN menyebutkan teks jawaban yang benar
+- JANGAN memberi jawaban langsung
 
 Tugasmu:
-- Jelaskan konsep yang benar berdasarkan soal yang salah
-- Gunakan informasi dari pilihan jawaban
-- Fokus pada konsep inti dari pertanyaan
-- Gunakan bahasa sederhana
+- Berikan petunjuk (hint) agar siswa bisa menemukan jawabannya sendiri
+- Jelaskan konsep yang diuji oleh soal
+- Gunakan bahasa sangat sederhana
 - Maksimal 120 kata
+- Boleh menggunakan bullet point
+
+Gunakan informasi dari soal untuk memahami konsep yang diuji.
 
 Data soal:
 ${materialText}
+
+Jika memungkinkan, gunakan analogi dunia nyata agar siswa lebih mudah memahami konsep.
 `
 
   const geminiModels = [
