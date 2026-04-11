@@ -48,20 +48,21 @@ model ClassroomMember {
 }
 
 model LearningMaterial {
-  id              String            @id @default(uuid())
-  classroomId     String
-  title           String
-  topicCategory   String
-  description     String?
-  videoUrl        String?
-  articleUrl      String?
-  orderIndex      Int               @default(0)
-  status          String            @default("draft")
-  createdAt       DateTime          @default(now())
-  classroom       Classroom         @relation(fields: [classroomId], references: [id])
-  questions       Question[]
-  studentProgress StudentProgress[]
-  testResults     TestResult[]
+  id                String            @id @default(uuid())
+  classroomId       String
+  title             String
+  topicCategory     String
+  description       String?
+  videoUrl          String?
+  articleUrl        String?
+  orderIndex        Int               @default(0)
+  status            String            @default("draft")
+  generatedContent  Json?             // hasil generate AI — format JSON terstruktur
+  createdAt         DateTime          @default(now())
+  classroom         Classroom         @relation(fields: [classroomId], references: [id])
+  questions         Question[]
+  studentProgress   StudentProgress[]
+  testResults       TestResult[]
 }
 
 model Question {
