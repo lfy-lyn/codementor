@@ -1,4 +1,131 @@
 import prisma from '../database/prisma.js'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+
+// Generate format JSON terstruktur dari deskripsi materi
+const generateStructuredContent = async (title, topicCategory, description, videoUrl, articleUrl) => {
+  const prompt = `
+Kamu adalah AI yang bertugas mengubah materi pembelajaran programming menjadi format JSON terstruktur seperti buku pelajaran interaktif.
+
+Data materi:
+Judul: ${title}
+Kategori: ${topicCategory}
+Deskripsi: ${description || 'Tidak ada deskripsi'}
+${videoUrl ? `Video Referensi: ${videoUrl}` : ''}
+${articleUrl ? `Artikel Referensi: ${articleUrl}` : ''}
+
+Buat konten pembelajaran yang lengkap dalam format JSON berikut:
+{
+  "judul": "judul materi",
+  "subJudul": "deskripsi singkat materi",
+  "estimasiWaktu": "X menit",
+  "sections": [
+    {
+      "type": "text",
+      "subJudul": "judul bagian",
+      "isi": "penjelasan panjang yang informatif"
+    },
+    {
+      "type": "code",
+      "subJudul": "judul contoh kode",
+      "bahasa": "javascript",
+      "isi": "contoh kode yang relevan"
+    },
+    {
+      "type": "poin",
+      "subJudul": "judul poin penting",
+      "items": ["poin 1", "poin 2", "poin 3"]
+    },
+    {
+      "type": "image",
+      "subJudul": "judul gambar",
+      "url": null,
+      "caption": "keterangan gambar atau diagram"
+    },
+    {
+      "type": "video",
+      "subJudul": "Video Pembelajaran",
+      "url": "${videoUrl || null}",
+      "caption": "keterangan video"
+    },
+    {
+      "type": "article",
+      "subJudul": "Referensi Artikel",
+      "url": "${articleUrl || null}",
+      "caption": "keterangan artikel referensi"
+    },
+    {
+      "type": "quiz",
+      "subJudul": "Cek Pemahaman",
+      "soal": "pertanyaan singkat refleksi",
+      "hint": "petunjuk tanpa jawaban langsung"
+    },
+    {
+      "type": "ringkasan",
+      "subJudul": "Rangkuman",
+      "items": ["poin rangkuman 1", "poin rangkuman 2"]
+    }
+  ],
+  "ringkasan": "ringkasan keseluruhan materi dalam 2-3 kalimat"
+}
+
+ATURAN PENTING:
+- Kembalikan HANYA JSON valid, tanpa teks lain, tanpa markdown, tanpa backtick
+- Gunakan bahasa Indonesia yang mudah dipahami
+- Minimal ada 4 sections dengan type yang berbeda-beda
+- Type yang WAJIB ada: text, code, poin, ringkasan
+- Type opsional: image, video, article, quiz (sertakan jika relevan)
+- Untuk video dan article, gunakan URL yang sudah diberikan jika ada
+- Buat konten yang benar-benar informatif dan mendalam tentang topik ${topicCategory}
+`
+
+  const geminiModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest']
+
+  for (const modelName of geminiModels) {
+    try {
+      const model  = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContent(prompt)
+      const text   = result.response.text().trim()
+      const clean  = text.replace(/```json|```/g, '').trim()
+      return JSON.parse(clean)
+    } catch (err) {
+      console.log(`Gemini ${modelName} gagal:`, err.message)
+    }
+  }
+
+  // Fallback kalau AI gagal
+  return {
+    judul        : title,
+    subJudul     : topicCategory,
+    estimasiWaktu: '15 menit',
+    sections     : [
+      {
+        type    : 'text',
+        subJudul: 'Materi',
+        isi     : description || 'Tidak ada deskripsi'
+      },
+      {
+        type    : 'video',
+        subJudul: 'Video Pembelajaran',
+        url     : videoUrl || null,
+        caption : 'Video referensi materi'
+      },
+      {
+        type    : 'article',
+        subJudul: 'Referensi Artikel',
+        url     : articleUrl || null,
+        caption : 'Artikel referensi materi'
+      },
+      {
+        type    : 'ringkasan',
+        subJudul: 'Rangkuman',
+        items   : [description || 'Pelajari materi ini dengan seksama']
+      }
+    ],
+    ringkasan: description || ''
+  }
+}
 
 // ── TAMBAH MATERI + SOAL (khusus guru) ─────────────────
 export const createMaterial = async (req, res) => {
@@ -39,6 +166,11 @@ export const createMaterial = async (req, res) => {
       })
     }
 
+    // Generate konten terstruktur dari AI
+    console.log('Generating structured content...')
+    const generatedContent = await generateStructuredContent(title, topicCategory, description)
+    console.log('Generated content selesai!')
+
     const material = await prisma.learningMaterial.create({
       data: {
         classroomId,
@@ -47,9 +179,10 @@ export const createMaterial = async (req, res) => {
         description,
         videoUrl,
         articleUrl,
-        orderIndex: orderIndex || 0,
-        status    : 'published',
-        questions : questions?.length > 0 ? {
+        orderIndex      : orderIndex || 0,
+        status          : 'published',
+        generatedContent,   // simpan hasil generate AI
+        questions: questions?.length > 0 ? {
           create: questions.map((q, index) => ({
             questionText : q.questionText,
             optionA      : q.optionA,
