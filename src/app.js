@@ -18,11 +18,11 @@ const app = express();
 app.use(helmet());
 
 app.use(cors({
-  origin     : ['http://localhost:5173', process.env.CLIENT_URL],
+  origin     : [process.env.CLIENT_URL, process.env.CLIENT_URL_STAGING],
   credentials: true
 }))
 
-app.use(morgan('dev'));
+app.use(morgan('combined'));
 app.use(express.json());
 
 // Health check — test server dan database sekaligus
